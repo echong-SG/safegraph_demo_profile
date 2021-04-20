@@ -11,39 +11,42 @@ def pd_read_csv_drive(id, drive, dtype=None):
   downloaded.GetContentFile('Filename.csv')  
   return(pd.read_csv('Filename.csv',dtype=dtype))
 
-def get_drive_id(census_year, filename):
+def get_drive_id(filename = None, census_year = None):
+
+    census_year = str(census_year)
 
     # Note: OpenCensusData public GDrive folder: https://drive.google.com/drive/u/1/folders/1qgrDzP_Fz2HIdK55qkh56rnSGAX106wy
     # Note: Sample of Patterns data public GDrive folder: https://drive.google.com/open?id=1xC8RFmrF3f6laRH08kOPBRLHEwJ8c41h
     drive_ids = {
-    '2018':{
-        'cbg_b01.csv' : '1QiDEguggaVx-kyi9x9Pr1UAW5eRf0rjF',
-        'cbg_b02.csv' : '1iUsZNL_u_cdzq8wryfE4oZGYM6S60Dvn',
-        'cbg_b03.csv' : '1f61pWEfT8SpeHaRGD7bfWsR4akdrjT-C',
-        'cbg_b15.csv' : '1Df33KE1vGod21WSZGndMdUnkPLAv24m7',
-        'cbg_b19.csv' : '1YxSjRYkNIzNgAHtfHuzlJEszbOxyidT2',
-        'cbg_field_descriptions.csv' : '1r7z3efdS5viIRMsQzu9ExHoIL29QjaVi',
-        'cbg_fips_codes.csv' : '1B1FEx_sxPTKZTlmqACknvjR2JKgsAB3x'
-        },
-    '2019':{
-        'cbg_b01.csv' : '1S4Q4G29MyMO3x5K6f0Ag8erCTUTCo9qz',
-        'cbg_b02.csv' : '1-LmdIoTxE-hnrbK7H6pV5u0QV1Bd5b5w',
-        'cbg_b03.csv' : '1e9anU7z_lWDbkbnwsLU86kmMGYoTEo8M',
-        'cbg_b15.csv' : '1s2RIyNi1EBwudWToNQDgPGwETmBpoyTE',
-        'cbg_b19.csv' : '1Lm89C-1gFIo1K-Clab-CE7VuDXSthDSo',
-        'cbg_field_descriptions.csv' : '1fJsLm6voxWsTq5FQrUzO9PpBltQ8n_lJ',
-        'cbg_fips_codes.csv' : '1yokEKYJF59vLG3oCl3R0KqIlkXldZyK7'
-        },
-    'home_panel_summary.csv': '1aiwhO6Pw1ZfUOoqUf6mS70s9tJgsAVp5',
-    'core_poi-patterns.csv' : '1vOiASCoWVIppoYK8DiyLShhH7xbZhfxA'
-    }
+        '2018':{
+            'cbg_b01.csv' : '1QiDEguggaVx-kyi9x9Pr1UAW5eRf0rjF',
+            'cbg_b02.csv' : '1iUsZNL_u_cdzq8wryfE4oZGYM6S60Dvn',
+            'cbg_b03.csv' : '1f61pWEfT8SpeHaRGD7bfWsR4akdrjT-C',
+            'cbg_b15.csv' : '1Df33KE1vGod21WSZGndMdUnkPLAv24m7',
+            'cbg_b19.csv' : '1YxSjRYkNIzNgAHtfHuzlJEszbOxyidT2',
+            'cbg_field_descriptions.csv' : '1r7z3efdS5viIRMsQzu9ExHoIL29QjaVi',
+            'cbg_fips_codes.csv' : '1B1FEx_sxPTKZTlmqACknvjR2JKgsAB3x'
+            },
+        '2019':{
+            'cbg_b01.csv' : '1S4Q4G29MyMO3x5K6f0Ag8erCTUTCo9qz',
+            'cbg_b02.csv' : '1-LmdIoTxE-hnrbK7H6pV5u0QV1Bd5b5w',
+            'cbg_b03.csv' : '1e9anU7z_lWDbkbnwsLU86kmMGYoTEo8M',
+            'cbg_b15.csv' : '1s2RIyNi1EBwudWToNQDgPGwETmBpoyTE',
+            'cbg_b19.csv' : '1Lm89C-1gFIo1K-Clab-CE7VuDXSthDSo',
+            'cbg_field_descriptions.csv' : '1fJsLm6voxWsTq5FQrUzO9PpBltQ8n_lJ',
+            'cbg_fips_codes.csv' : '1yokEKYJF59vLG3oCl3R0KqIlkXldZyK7'
+            },
+        'home_panel_summary.csv': '1aiwhO6Pw1ZfUOoqUf6mS70s9tJgsAVp5',
+        'core_poi-patterns.csv' : '1vOiASCoWVIppoYK8DiyLShhH7xbZhfxA'
+        }
     
-    if(filename):
+    if(filename is None | census_year is None):
+        return(drive_ids)
+    elif(filename & census_year is None):
         return(drive_ids[filename])
     elif(filename & census_year):
         return(drive_ids[census_year][filename])
-    else:
-        return(drive_ids)
+        
 
 # ~~~~~~~~~~~~~~ Wrangle Open Census Data Data Functions~~~~~~~~~~
 
