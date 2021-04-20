@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import os
@@ -116,7 +115,7 @@ def get_edu_attainment_groups():
 def pull_vals_of_dict_into_list(my_dict):
     return(flatten_list([val for key,val in my_dict.items()]))
 
-def get_final_table_ids(field_level_1):
+def get_final_table_ids(table_title_str, census_year):
     # final_codes are the table_ids we expect in our final cleaned and aggregated data 
     # (including made up codes; fake agg codes are substituted in for the unaggregated codes_
         
@@ -124,22 +123,27 @@ def get_final_table_ids(field_level_1):
     edu_read_codes, edu_final_codes = get_edu_attainment_groups()
     age_read_codes, age_final_codes = get_age_by_sex_groups()
     
-    
+    if table_title_str == 'Household Income In The Past 12 Months':
+      census_year = str(census_year)
+      table_title_str = f'Household Income In The Past 12 Months (In {census_year} Inflation-Adjusted Dollars)'
     final_codes = {'Sex By Age' : pull_vals_of_dict_into_list(age_final_codes),
                    'Hispanic Or Latino Origin' : ['B03003e3', 'B03003e2'],
                    'Race' : ['B02001e2','B02001e3','B02001e4','B02001e5','B02001e6','B02001e7','B02001e8'],
                    'Educational Attainment For The Population 25 Years And Over' : pull_vals_of_dict_into_list(edu_final_codes),
-                   'Aggregate Household Income In The Past 12 Months (In 2016 Inflation-Adjusted Dollars)' : pull_vals_of_dict_into_list(inc_final_codes)
+                   table_title_str : pull_vals_of_dict_into_list(inc_final_codes)
                   }
     
-    return(final_codes[field_level_1])
+    return(final_codes[table_title_str])
 
-def get_census_prefix(field_level_1_list, cbg_field_desc):
+def get_census_prefix(field_level_1_list, cbg_field_desc, census_year):
+    census_year = str(census_year)
+    field_level_1_list = [f'Household Income In The Past 12 Months (In {census_year} Inflation-Adjusted Dollars)' if field == 'Household Income In The Past 12 Months' else field for field in field_level_1_list]
+
     prefixes = [table_id[0:3].lower() for table_id in cbg_field_desc[cbg_field_desc.table_title.isin(field_level_1_list)].table_id]
     return(list(set(prefixes)))
 
 
-def aggregate_census_columns(cen_df_, cbg_field_desc_, agg_groups, agg_groups_new_codes, field_level_1_str, field_level_3_str):
+def aggregate_census_columns(cen_df_, cbg_field_desc_, agg_groups, agg_groups_new_codes, table_title_str, universe):
     cen_df = cen_df_.copy()
     
     # Make the Aggregations into new columns
@@ -149,9 +153,9 @@ def aggregate_census_columns(cen_df_, cbg_field_desc_, agg_groups, agg_groups_ne
         cen_df[new_made_up_code] =  cen_df[codes].sum(axis='columns') 
         cen_df.drop(codes,axis='columns',inplace=True) # drop the old columns we just aggregated
         new_field_desc_list.append( pd.DataFrame({'table_id' : new_made_up_code,
-                                                  'field_level_1' : field_level_1_str,
-                                                  'field_level_2' : agg_group,
-                                                  'field_level_3' : field_level_3_str
+                                                  'table_title' : table_title_str,
+                                                  'aggregation' : agg_group,
+                                                  'universe' : universe
                                                  }, index=[0])
                                   ) # add new aggregations to our field_desc object
         
@@ -163,19 +167,20 @@ def aggregate_ageSex_vars(cen_df_, cbg_field_desc_):
     
     cen_df = cen_df_.copy() # to avoid assignment warning
     age_groups, age_groups_new_codes = get_age_by_sex_groups()
-    field_level_1_str = 'Sex By Age'
-    field_level_3_str = 'Total Population -- (Estimate)'
-    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df, cbg_field_desc_, age_groups, age_groups_new_codes, field_level_1_str, field_level_3_str)
+    table_title_str = 'Sex By Age'
+    universe = 'Total population'
+    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df, cbg_field_desc_, age_groups, age_groups_new_codes, table_title_str, universe)
    
     return(cen_df, cbg_field_desc_)
 
-def aggregate_HouseholdIncome_vars(cen_df_, cbg_field_desc_):
+def aggregate_HouseholdIncome_vars(cen_df_, cbg_field_desc_, census_year):
     
+    census_year = str(census_year)
     cen_df = cen_df_.copy() # to avoid assignment warning
     inc_groups, inc_groups_new_codes = get_household_income_groups()
-    field_level_1_str = 'Household Income In The Past 12 Months (In 2016 Inflation-Adjusted Dollars)'
-    field_level_3_str = 'Households -- (Estimate)'
-    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df, cbg_field_desc_, inc_groups, inc_groups_new_codes, field_level_1_str, field_level_3_str)
+    table_title_str = f'Household Income In The Past 12 Months (In {census_year} Inflation-Adjusted Dollars)'
+    universe = 'Households'
+    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df, cbg_field_desc_, inc_groups, inc_groups_new_codes, table_title_str, universe)
    
     return(cen_df, cbg_field_desc_)
 
@@ -183,14 +188,14 @@ def aggregate_edu_variables(cen_df_, cbg_field_desc_):
     
     cen_df = cen_df_.copy() # to avoid assignment warning
     edu_groups, edu_groups_new_codes = get_edu_attainment_groups()
-    field_level_1_str = 'Educational Attainment For The Population 25 Years And Over'
-    field_level_3_str = 'Population 25 Years And Over -- (Estimate)'
-    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df,cbg_field_desc_, edu_groups, edu_groups_new_codes, field_level_1_str, field_level_3_str)
+    table_title_str = 'Educational Attainment For The Population 25 Years And Over'
+    universe = 'Population 25 years and over'
+    cen_df, cbg_field_desc_ = aggregate_census_columns(cen_df,cbg_field_desc_, edu_groups, edu_groups_new_codes, table_title_str, universe)
    
     return(cen_df, cbg_field_desc_)
 
 
-def reaggregate_census_data(cen_df, cbg_field_desc, demos_to_analyze, verbose=False):
+def reaggregate_census_data(cen_df, cbg_field_desc, demos_to_analyze, census_year, verbose=False):
     # Manually re-aggregate some categories into fewer columns
     # optionally print shape of df after each reaggregation to see total columns shrinking
     
@@ -201,33 +206,34 @@ def reaggregate_census_data(cen_df, cbg_field_desc, demos_to_analyze, verbose=Fa
     if 'Sex By Age' in demos_to_analyze:
         cen_df, cbg_field_desc = aggregate_ageSex_vars(cen_df, cbg_field_desc)
         if(verbose): print("Age aggregation complete.\n{0}".format(cen_df.shape))
-    if 'Aggregate Household Income In The Past 12 Months (In 2016 Inflation-Adjusted Dollars)' in demos_to_analyze:
-        cen_df, cbg_field_desc = aggregate_HouseholdIncome_vars(cen_df, cbg_field_desc)
+    if 'Household Income In The Past 12 Months' in demos_to_analyze:
+        cen_df, cbg_field_desc = aggregate_HouseholdIncome_vars(cen_df, cbg_field_desc, census_year)
         if(verbose): print("Income aggregation complete.\n{0}".format(cen_df.shape))
     
     # Drop all the columns that are not essential to our cause
-    columns_to_keep = flatten_list([flatten_list(get_final_table_ids(demo)) for demo in demos_to_analyze]) + ['census_block_group', 'B01001e1']
+    columns_to_keep = flatten_list([flatten_list(get_final_table_ids(demo, census_year)) for demo in demos_to_analyze]) + ['census_block_group', 'B01001e1']
     cen_df = cen_df[columns_to_keep]
     if(verbose): print("Dropped unused columns.\n{0}".format(cen_df.shape))
     
     return(cen_df, cbg_field_desc)
 
+
 def get_raw_census_data(demos_to_analyze, open_census_data_dir, census_year, drive=None, verbose=False):
-    # demos_to_analyze is a list of length 1 to 5 containing field_level_1 values  
-    # open_census_data_dir is the path where the Open Census Data is located
+    # demos_to_analyze is a list of length 1 to 5 containing table_id values  
+    # open_census_data_dir is the path where one year of the Open Census Data is located
     # alternatively if you pass a drive object from google coLab e.g. drive = GoogleDrive(gauth), 
     #.  then these functions will read from the public Google Drive sharing open census data. 
-    # Note: OpenCensusData public GDrive folder: https://drive.google.com/drive/u/1/folders/1btSS6zo7_wJCCXAigkbhnaoeU-Voa9pG
+    # Note: OpenCensusData public GDrive folder: https://drive.google.com/drive/u/1/folders/1Thu78vlZ7KnRdXJllzeEErI90lzT6bSc
     
-    # These are the supported options for field_level_1 strings: 
+    # These are the supported options for table_id strings: 
     #    'Sex By Age', 
     #    'Race', 
     #    'Hispanic Or Latino Origin', 
     #    'Educational Attainment For The Population 25 Years And Over',
-    #    'Aggregate Household Income In The Past 12 Months (In 2016 Inflation-Adjusted Dollars)'
+    #    'Household Income In The Past 12 Months'
     
     cbg_field_desc = get_cbg_field_desc(census_year, ocd_dir=open_census_data_dir, drive=drive)
-    prefixes = set(get_census_prefix(demos_to_analyze, cbg_field_desc) + ['b01']) # 'b01' we need for total_population
+    prefixes = set(get_census_prefix(demos_to_analyze, cbg_field_desc, census_year) + ['b01']) # 'b01' we need for total_population
 
     if(verbose): print("Pulling census data from {0} for:\n{1}".format((open_census_data_dir or drive), '\n'.join(demos_to_analyze)))
     if(open_census_data_dir):
@@ -651,5 +657,3 @@ def master_demo_analysis(open_census_data_dir,
                                                        group_key = group_key,
                                                        verbose=verbose)
     return(visitors_join, final_results)
-    
-    
