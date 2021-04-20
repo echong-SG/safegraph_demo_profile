@@ -13,8 +13,6 @@ def pd_read_csv_drive(id, drive, dtype=None):
 
 def get_drive_id(filename = None, census_year = None):
 
-    census_year = str(census_year)
-
     # Note: OpenCensusData public GDrive folder: https://drive.google.com/drive/u/1/folders/1qgrDzP_Fz2HIdK55qkh56rnSGAX106wy
     # Note: Sample of Patterns data public GDrive folder: https://drive.google.com/open?id=1xC8RFmrF3f6laRH08kOPBRLHEwJ8c41h
     drive_ids = {
@@ -42,9 +40,10 @@ def get_drive_id(filename = None, census_year = None):
     
     if((filename is None) & (census_year is None)):
         return(drive_ids)
-    elif((filename) & (census_year is None)):
+    elif((filename is not None) & (census_year is None)):
         return(drive_ids[filename])
-    elif((filename) & (census_year)):
+    elif((filename is not None) & (census_year is not None)):
+        census_year = str(census_year)
         return(drive_ids[census_year][filename])
         
 
@@ -61,11 +60,11 @@ def flatten_list(mylist):
         newlist = newlist + item
     return(newlist)  
 
-def get_cbg_field_desc(ocd_dir=None, drive=None):
+def get_cbg_field_desc(census_year, ocd_dir=None, drive=None):
     if(ocd_dir):
-        df = pd.read_csv(os.path.join(ocd_dir,"metadata","cbg_field_descriptions.csv"))
+        df = pd.read_csv(os.path.join(ocd_dir, "metadata", "cbg_field_descriptions.csv"))
     elif(drive):
-        df = pd_read_csv_drive(get_drive_id('cbg_field_descriptions.csv'), drive)
+        df = pd_read_csv_drive(get_drive_id('cbg_field_descriptions.csv', census_year), drive)
     return(df)
 
 def get_age_by_sex_groups():
@@ -136,7 +135,7 @@ def get_final_table_ids(field_level_1):
     return(final_codes[field_level_1])
 
 def get_census_prefix(field_level_1_list, cbg_field_desc):
-    prefixes = [table_id[0:3].lower() for table_id in cbg_field_desc[cbg_field_desc.field_level_1.isin(field_level_1_list)].table_id]
+    prefixes = [table_id[0:3].lower() for table_id in cbg_field_desc[cbg_field_desc.table_title.isin(field_level_1_list)].table_id]
     return(list(set(prefixes)))
 
 
@@ -213,7 +212,7 @@ def reaggregate_census_data(cen_df, cbg_field_desc, demos_to_analyze, verbose=Fa
     
     return(cen_df, cbg_field_desc)
 
-def get_raw_census_data(demos_to_analyze, open_census_data_dir, drive=None, verbose=False):
+def get_raw_census_data(demos_to_analyze, open_census_data_dir, census_year, drive=None, verbose=False):
     # demos_to_analyze is a list of length 1 to 5 containing field_level_1 values  
     # open_census_data_dir is the path where the Open Census Data is located
     # alternatively if you pass a drive object from google coLab e.g. drive = GoogleDrive(gauth), 
@@ -227,7 +226,7 @@ def get_raw_census_data(demos_to_analyze, open_census_data_dir, drive=None, verb
     #    'Educational Attainment For The Population 25 Years And Over',
     #    'Aggregate Household Income In The Past 12 Months (In 2016 Inflation-Adjusted Dollars)'
     
-    cbg_field_desc = get_cbg_field_desc(ocd_dir=open_census_data_dir, drive=drive)
+    cbg_field_desc = get_cbg_field_desc(census_year, ocd_dir=open_census_data_dir, drive=drive)
     prefixes = set(get_census_prefix(demos_to_analyze, cbg_field_desc) + ['b01']) # 'b01' we need for total_population
 
     if(verbose): print("Pulling census data from {0} for:\n{1}".format((open_census_data_dir or drive), '\n'.join(demos_to_analyze)))
@@ -236,7 +235,7 @@ def get_raw_census_data(demos_to_analyze, open_census_data_dir, drive=None, verb
         census_df_raw = [pd.read_csv(file,dtype = {'census_block_group': str}) for file in ocd_files]
     elif(drive):
         ocd_files = ['cbg_'+prefix+'.csv' for prefix in prefixes]
-        census_df_raw = [pd_read_csv_drive(get_drive_id(file), drive, dtype = {'census_block_group': str}) for file in ocd_files]
+        census_df_raw = [pd_read_csv_drive(get_drive_id(file, census_year), drive, dtype = {'census_block_group': str}) for file in ocd_files]
     cen_df = reduce(lambda  left,right: pd.merge(left,right,on='census_block_group'), census_df_raw)
     return(cen_df, cbg_field_desc) 
 
