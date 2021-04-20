@@ -40,11 +40,11 @@ def get_drive_id(filename = None, census_year = None):
         'core_poi-patterns.csv' : '1vOiASCoWVIppoYK8DiyLShhH7xbZhfxA'
         }
     
-    if(filename is None | census_year is None):
+    if((filename is None) & (census_year is None)):
         return(drive_ids)
-    elif(filename & census_year is None):
+    elif((filename) & (census_year is None)):
         return(drive_ids[filename])
-    elif(filename & census_year):
+    elif((filename) & (census_year)):
         return(drive_ids[census_year][filename])
         
 
