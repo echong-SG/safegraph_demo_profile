@@ -115,7 +115,7 @@ def get_edu_attainment_groups():
 def pull_vals_of_dict_into_list(my_dict):
     return(flatten_list([val for key,val in my_dict.items()]))
 
-def get_final_table_ids(table_title_str, census_year):
+def get_final_table_ids(table_title_str, census_year=None):
     # final_codes are the table_ids we expect in our final cleaned and aggregated data 
     # (including made up codes; fake agg codes are substituted in for the unaggregated codes_
         
@@ -123,14 +123,17 @@ def get_final_table_ids(table_title_str, census_year):
     edu_read_codes, edu_final_codes = get_edu_attainment_groups()
     age_read_codes, age_final_codes = get_age_by_sex_groups()
     
+    household_income_str = ''
     if table_title_str == 'Household Income In The Past 12 Months':
       census_year = str(census_year)
       table_title_str = f'Household Income In The Past 12 Months (In {census_year} Inflation-Adjusted Dollars)'
+      household_income_str = table_title_str
+      
     final_codes = {'Sex By Age' : pull_vals_of_dict_into_list(age_final_codes),
                    'Hispanic Or Latino Origin' : ['B03003e3', 'B03003e2'],
                    'Race' : ['B02001e2','B02001e3','B02001e4','B02001e5','B02001e6','B02001e7','B02001e8'],
                    'Educational Attainment For The Population 25 Years And Over' : pull_vals_of_dict_into_list(edu_final_codes),
-                   table_title_str : pull_vals_of_dict_into_list(inc_final_codes)
+                   household_income_str : pull_vals_of_dict_into_list(inc_final_codes)
                   }
     
     return(final_codes[table_title_str])
@@ -245,15 +248,16 @@ def get_raw_census_data(demos_to_analyze, open_census_data_dir, census_year, dri
     cen_df = reduce(lambda  left,right: pd.merge(left,right,on='census_block_group'), census_df_raw)
     return(cen_df, cbg_field_desc) 
 
-def normalize_demos_to_fractions(cen_df, demos_to_analyze, verbose=False):
+def normalize_demos_to_fractions(cen_df, demos_to_analyze, census_year, verbose=False):
+    census_year = str(census_year)
     for this_demo_cat in demos_to_analyze:
-        demo_codes = get_final_table_ids(this_demo_cat)
+        demo_codes = get_final_table_ids(this_demo_cat, census_year)
         demo_totals = cen_df[demo_codes].sum(axis=1)
         for this_code in demo_codes:
             cen_df[this_code+"_frac"] = cen_df[this_code] / demo_totals
     if(verbose): print("Added normalized columns as fractions.\n{0}".format(cen_df.shape))
     return(cen_df)
-
+    
 # ~~~~~~~~~~~~~~ Wrangle Patterns Data Functions~~~~~~~~~~
 import json
 
