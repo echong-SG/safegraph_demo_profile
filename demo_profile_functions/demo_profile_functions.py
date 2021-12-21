@@ -33,7 +33,7 @@ def get_drive_id(filename = None, census_year = None):
             'cbg_fips_codes.csv' : '1yokEKYJF59vLG3oCl3R0KqIlkXldZyK7'
             },
         'home_panel_summary.csv': '124zKnt5hzzTa_Abe-kr3EguYP41YmyH6',
-        'core_poi-patterns.csv' : '1NqVhgxgi9QIZ2z0Ds99bIFbwpffm8oSA'
+        'core_poi-patterns.csv' : '1uwRdSCAipfwhIU24BK0h2he3Aqrnzsg9'
         }
     
     if((filename is None) & (census_year is None)):
