@@ -337,27 +337,27 @@ def read_patterns_data(patterns_path, drive=None):
         patterns_raw = pd.concat((pd_read_csv_drive(get_drive_id(f), drive) for f in all_patterns_files))
     return(patterns_raw)
 
-def filter_patterns_dat(patt_df, brands_whitelist, sgpid_whitelist, verbose=False):
+def filter_patterns_dat(patt_df, brands_whitelist, plackey_whitelist, verbose=False):
     df = patt_df.copy()
     if(verbose): print("Unfiltered patterns:\n{0}".format(df.shape))
 
-    # Filter to brands and/or safegraph_place_ids
+    # Filter to brands and/or placekeys
     if(brands_whitelist):
         df = df[df.brands.isin(brands_whitelist)]
         if(verbose): 
             print("Filtering to these brands: \n{0}".format(brands_whitelist))
             print("Filtered to select brands:\n{0}".format(df.shape))
-    if(sgpid_whitelist):
-        df = df[df.safegraph_place_id.isin(sgpid_whitelist)]
+    if(plackey_whitelist):
+        df = df[df.placekey.isin(placekey_whitelist)]
         if(verbose): 
-            print("Filtering to these sgpids: \n{0}".format(sgpid_whitelist))
+            print("Filtering to these sgpids: \n{0}".format(plackey_whitelist))
             print("Filtered to select sgpids:\n{0}".format(df.shape))
     return(df)
 
 def vertically_explode_json(
     df, 
     json_column='visitor_home_cbgs', 
-    index_column='safegraph_place_id', 
+    index_column='placekey', 
     key_col_name='visitor_home_cbg', 
     value_col_name='visitor_count'):
 
@@ -389,7 +389,7 @@ def vertically_explode_json(
 
     return(pd.DataFrame(all_sgpid_cbg_data))
 
-def extract_visitor_home_cbgs(patt_df, columns_from_patterns=['safegraph_place_id','brands'], verbose=False):
+def extract_visitor_home_cbgs(patt_df, columns_from_patterns=['placekey','brands'], verbose=False):
     if(verbose): print("Exploding visitor_home_cbgs for {0} records (This is a slow step).".format(patt_df.shape[0]))
     home_visitor_cbgs = vertically_explode_json(patt_df) # this is slow step
     visitors_df = pd.merge(home_visitor_cbgs, patt_df[columns_from_patterns])
@@ -640,12 +640,12 @@ def apply_strata_reweighting(df,
 
 
 # ~~~~~~~~~~~~~~ Wrapper Functions~~~~~~~~~~
-def get_patterns_master(patterns_dir, drive=None, brands=None, sgpids=None, verbose=False):
-    if((not brands) & (not sgpids)):
-        print("Error: Must give either a brand_list or sgpid_whitelist in get_patterns()")
+def get_patterns_master(patterns_dir, drive=None, brands=None, placekeys=None, verbose=False):
+    if((not brands) & (not placekey)):
+        print("Error: Must give either a brand_list or plackey_whitelist in get_patterns()")
         return(None)
     patterns_raw = read_patterns_data(patterns_dir, drive=drive)
-    patterns_filtered = filter_patterns_dat(patterns_raw, brands, sgpids, verbose=verbose)
+    patterns_filtered = filter_patterns_dat(patterns_raw, brands, placekeys, verbose=verbose)
     visitors_df = extract_visitor_home_cbgs(patterns_filtered, verbose=verbose) #   this is a slow step
     return(visitors_df)
 
@@ -689,7 +689,7 @@ def master_demo_analysis(open_census_data_dir,
                          drive,
                          demos_to_analyze, 
                          brands_list, 
-                         sgpid_whitelist, 
+                         plackey_whitelist, 
                          census_year,
                          group_key = 'brands',
                          verbose=False):
@@ -697,7 +697,7 @@ def master_demo_analysis(open_census_data_dir,
     visitors_df = get_patterns_master(patterns_dir=patterns_dir, 
                                drive=drive,
                                brands=brands_list, 
-                               sgpids=sgpid_whitelist,
+                               placekeys=plackey_whitelist,
                                verbose=verbose)
     if(verbose): print("completed visitors_df {}".format(visitors_df.shape))
     
