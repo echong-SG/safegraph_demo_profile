@@ -332,9 +332,11 @@ def read_patterns_data(patterns_path, drive=None):
     if(patterns_path):
         all_patterns_files = [os.path.join(patterns_path,filepath) for filepath in os.listdir(patterns_path) if 'patterns' in filepath.lower()]
         patterns_raw = pd.concat((pd.read_csv(f) for f in all_patterns_files))
+        patterns_raw = patterns_raw[patterns_raw['visitor_home_cbgs'].notnull()]
     elif(drive):
         all_patterns_files = [key for key in get_drive_id(None).keys() if 'patterns' in key]
         patterns_raw = pd.concat((pd_read_csv_drive(get_drive_id(f), drive) for f in all_patterns_files))
+        patterns_raw = patterns_raw[patterns_raw['visitor_home_cbgs'].notnull()]
     return(patterns_raw)
 
 def filter_patterns_dat(patt_df, brands_whitelist, plackey_whitelist, verbose=False):
@@ -377,7 +379,7 @@ def vertically_explode_json(
     #    3) value_col_name
     
     df = df.dropna(subset = [json_column]).copy() # Drop nan jsons 
-    df[json_column+'_dict'] = [json.loads(cbg_json) for cbg_json in df[json_column]]
+    df[json_column+'_dict'] = df[json_column].apply(lambda x: json.loads(x) if x != '{}' else x)
 
     # extract each key:value inside each visitor_home_cbg dict (2 nested loops) 
     all_sgpid_cbg_data = [] # each cbg data point will be one element in this list
