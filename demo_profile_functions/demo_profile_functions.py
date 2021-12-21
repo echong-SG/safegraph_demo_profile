@@ -379,7 +379,7 @@ def vertically_explode_json(
     #    3) value_col_name
     
     df = df.dropna(subset = [json_column]).copy() # Drop nan jsons 
-    df[json_column+'_dict'] = df[json_column].apply(lambda x: json.loads(x) if x != '{}' else x)
+    df[json_column+'_dict'] = [json.loads(cbg_json) for cbg_json in df[json_column]]
 
     # extract each key:value inside each visitor_home_cbg dict (2 nested loops) 
     all_sgpid_cbg_data = [] # each cbg data point will be one element in this list
