@@ -641,7 +641,7 @@ def apply_strata_reweighting(df,
 
 # ~~~~~~~~~~~~~~ Wrapper Functions~~~~~~~~~~
 def get_patterns_master(patterns_dir, drive=None, brands=None, placekeys=None, verbose=False):
-    if((not brands) & (not placekey)):
+    if((not brands) & (not placekeys)):
         print("Error: Must give either a brand_list or plackey_whitelist in get_patterns()")
         return(None)
     patterns_raw = read_patterns_data(patterns_dir, drive=drive)
